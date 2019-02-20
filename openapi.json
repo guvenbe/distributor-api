@@ -2,7 +2,7 @@
   "openapi": "3.0.2",
   "info": {
     "version": "1.1",
-    "title": "SFG Brewery API",
+    "title": "SFG Beer Works Distributor API",
     "license": {
       "name": "GNU GPLv3",
       "url": "https://www.gnu.org/licenses/gpl.txt"
