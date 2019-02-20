@@ -8,44 +8,6 @@ jobs:
 
         steps:
             - checkout
-
-            # Download and cache dependencies
-            -   restore_cache:
-                    keys:
-                        - v1-dependencies-{{ checksum "package.json" }}
-                        # fallback to using the latest cache if no exact match is found
-                        - v1-dependencies-
-
-            - run: 'sudo npm install -g npm@latest'
-
-            - run: npm install
-
-            -   save_cache:
-                    paths:
-                        - node_modules
-                    key: v1-dependencies-{{ checksum "package.json" }}
-
-            - run:
-                name: Deploy to gh-pages
-                command: |
-                    GIT_REPO="git@github.com:velopaymentsapi/VeloOpenApi.git"
-                    rm -rf ./node_modules/gh-pages/.cache
-                    if [ $CIRCLE_BRANCH == "master" ]
-                    then
-                        echo "Running on Master"
-                        npm run build
-                        echo "Deploying"
-                        npm run deploy -r $GIT_REPO
-                    elif [ $CIRCLE_BRANCH != "master" ] && [ $CIRCLE_BRANCH != "gh-pages" ]
-                    then
-                        echo "Running NOT on master or gh-pages"
-                        npm run build
-                        DEST_DIR="/branch/$CIRCLE_BRANCH"
-                        echo "Deploying to branch $DEST_DIR on $GIT_REPO"
-                        npm run deploy -- -r $GIT_REPO --dest $DEST_DIR
-                    else
-                        echo Should not get here
-                    fi
 workflows:
     version: 2
     build-deploy:
