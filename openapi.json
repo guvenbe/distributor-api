@@ -19,7 +19,7 @@
     }
   ],
   "paths": {
-    "/api/v1/order/status.webhook": {
+    "/api/v1/order/status": {
       "post": {
         "description": "Webhook post to reecive notifcations of order status changes.",
         "requestBody": {
