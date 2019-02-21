@@ -61,5 +61,7 @@ components:
         orderId:
           type: string
           format: uuid
+        customerRef:
+          type: string
         orderStatus:
           $ref: '#/components/schemas/OrderStatusEnum'
