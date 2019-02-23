@@ -15,7 +15,7 @@
 openapi: "3.0.2"
 info:
     version: "1.1"
-    title: SFG Brewery API
+    title: SFG Beer Works - Distributor API
     license:
         name: GNU GPLv3
         url: https://www.gnu.org/licenses/gpl.txt
@@ -26,6 +26,41 @@ servers:
     -   url: http://localhost:8080
         description: Local Host
 paths:
+    /api/v1/beer:
+        get:
+            description: List Beers
+            tags:
+                - Beer
+            parameters:
+                - $ref: '#/components/parameters/Page'  
+                - $ref: '#/components/parameters/PageSize'    
+                - $ref: '#/components/parameters/BeerName'  
+                - $ref: '#/components/parameters/BeerStyle'  
+            responses:
+                '200':
+                    description: List Beers Response
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/BeerPagedList'
+    /api/v1/beer/{beerId}:
+        parameters:
+            -   $ref: "#/components/parameters/BeerId"
+        get:
+            description: Get BeerDto by Id
+            tags:
+                - BeerDto
+            responses:
+                '200':
+                    description: List Beers Response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Beer'
+                '404':
+                    description: Not Found
     /api/v1/order/status.webhook:
         post:        
           description: Webhook post to reecive notifcations of order status changes.
@@ -61,6 +96,34 @@ components:
                 lastModifiedDate:
                     type: string
                     format: date-time  
+    Beer:
+        type: object
+        allOf:
+            -   $ref: "#/components/schemas/BaseItem"
+        required:
+            - beerName
+            - beerStyle
+            - quantityOnHand
+            - price
+        properties:
+            beerName:
+                type: string
+            beerStyle:
+                $ref: '#/components/schemas/BeerStyleEnum'
+            quantityOnHand:
+                type: integer
+            price:
+                type: string
+                format: decimal
+    BeerPagedList:
+        type: object
+        allOf:
+            - $ref: "#/components/schemas/PagedResponse"  
+        properties:
+            content:
+                type: array
+                items:
+                    $ref: "#/components/schemas/Beer" 
     OrderStatusEnum:
             type: string
             enum:
