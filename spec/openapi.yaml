@@ -61,7 +61,7 @@ paths:
                                 $ref: '#/components/schemas/Beer'
                 '404':
                     description: Not Found
-    /api/v1/order/status.webhook:
+    /api/v1/order/status:
         post:        
           description: Webhook post to reecive notifcations of order status changes.
           requestBody: 
@@ -138,5 +138,7 @@ components:
                 orderId:
                     type: string
                     format: uuid
+                customerRef:
+                    type: string
                 orderStatus:
                     $ref: "#/components/schemas/OrderStatusEnum"

@@ -28,7 +28,7 @@ jobs:
             - run:
                 name: Deploy to gh-pages
                 command: |
-                    GIT_REPO="git@github.com:velopaymentsapi/VeloOpenApi.git"
+                    GIT_REPO="git@github.com:sfg-beer-works/distributor-api.git"
                     rm -rf ./node_modules/gh-pages/.cache
                     if [ $CIRCLE_BRANCH == "master" ]
                     then
