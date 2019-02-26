@@ -25,6 +25,9 @@ info:
 servers:
     -   url: http://localhost:8080
         description: Local Host
+tags:
+    -   name: Beer
+    -   name: Distributor Order
 paths:
     /api/v1/beer:
         get:
@@ -32,10 +35,10 @@ paths:
             tags:
                 - Beer
             parameters:
-                - $ref: '#/components/parameters/Page'  
-                - $ref: '#/components/parameters/PageSize'    
-                - $ref: '#/components/parameters/BeerName'  
-                - $ref: '#/components/parameters/BeerStyle'  
+                -   $ref: '#/components/parameters/Page'
+                -   $ref: '#/components/parameters/PageSize'
+                -   $ref: '#/components/parameters/BeerName'
+                -   $ref: '#/components/parameters/BeerStyle'
             responses:
                 '200':
                     description: List Beers Response
@@ -49,9 +52,9 @@ paths:
         parameters:
             -   $ref: "#/components/parameters/BeerId"
         get:
-            description: Get BeerDto by Id
+            description: Get Beer by Id
             tags:
-                - BeerDto
+                - Beer
             responses:
                 '200':
                     description: List Beers Response
@@ -61,26 +64,92 @@ paths:
                                 $ref: '#/components/schemas/Beer'
                 '404':
                     description: Not Found
-    /api/v1/order/status:
-        post:        
-          description: Webhook post to reecive notifcations of order status changes.
-          requestBody: 
-            description: Order Status Update
-            content:
-                application/json:
-                    schema:
-                        type: object
-                        properties:
-                            orderId:
+    /api/v1/order/:
+        parameters:
+            -   $ref: "#/components/parameters/CustomerId"
+            -   $ref: '#/components/parameters/Page'
+            -   $ref: '#/components/parameters/PageSize'
+        get:
+            description: List Distributor Orders
+            tags:
+                - Distributor Order
+            responses:
+                '200':
+                    description: List Distributor Order Reponse
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DistributorOrderPagedList"
+        post:
+            description: Place Order
+            tags:
+                - Distributor Order
+            requestBody:
+                required: false
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DistributorOrder"
+            responses:
+                '201':
+                    description: Order Created
+                    headers:
+                        Location:
+                            description: Reference to created Order
+                            schema:
                                 type: string
-                                format: uuid
-                            orderStatus:
-                                $ref: "#/components/schemas/OrderStatusUpdate"
-          responses:
-              '200':
-                  description: Okay        
+                                format: uri
+                '404':
+                    description: Not Found
+            callbacks:
+                orderStatusChange:
+                    '{$request.body#/orderStatusCallback}':
+                        description: Webhook post to reecive notifcations of order status changes.
+                        post:
+                            requestBody:
+                                $ref: '#/components/requestBodies/OrderStatusCallback'
+                            responses:
+                                '200':
+                                    description: Okay
+    /api/v1/order/{orderId}:
+        parameters:
+            -   $ref: "#/components/parameters/CustomerId"
+            -   $ref: "#/components/parameters/OrderId"
+        get:
+            description: Get Order By Id
+            tags:
+                - Distributor Order
+            responses:
+                '200':
+                    description: HTTP Okay
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DistributorOrder"
+                '404':
+                    description: Customer Id or Order Id Not Found
+    /api/v1/order/status:
+        post:
+            description: Webhook post to reecive notifcations of order status changes.
+            tags:
+                - Distributor Order
+            requestBody:
+                description: Order Status Update
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                orderId:
+                                    type: string
+                                    format: uuid
+                                orderStatus:
+                                    $ref: "#/components/schemas/OrderStatusUpdate"
+            responses:
+                '200':
+                    description: Okay
 components:
-  parameters:
+    parameters:
         BeerId:
             name: beerId
             in: path
@@ -88,7 +157,7 @@ components:
             required: true
             schema:
                 type: string
-                format: uuid  
+                format: uuid
         BeerName:
             name: beerName
             in: query
@@ -102,27 +171,43 @@ components:
             description: Beer Style
             required: false
             schema:
-                type: string 
+                type: string
+        CustomerId:
+            name: beerId
+            in: query
+            description: Beer Id
+            required: true
+            schema:
+                type: string
+                format: uuid
         Page:
             name: pageNumber
             in: query
-            description: Page number. 
+            description: Page number.
             required: false
             schema:
                 type: integer
                 format: int32
-                default: 1       
+                default: 1
         PageSize:
             name: pageSize
             in: query
-            description: Page size. 
+            description: Page size.
             required: false
             schema:
                 type: integer
                 format: int32
-                default: 25      
-  schemas: 
-    BaseItem:
+                default: 25
+        OrderId:
+            name: orderId
+            in: path
+            description: Order Id
+            required: true
+            schema:
+                type: string
+                format: uuid
+    schemas:
+        BaseItem:
             type: object
             properties:
                 id:
@@ -136,102 +221,156 @@ components:
                     format: date-time
                 lastModifiedDate:
                     type: string
-                    format: date-time  
-    Beer:
-        type: object
-        allOf:
-            -   $ref: "#/components/schemas/BaseItem"
-        required:
-            - beerName
-            - beerStyle
-            - quantityOnHand
-            - price
-        properties:
-            beerName:
-                type: string
-            beerStyle:
-                type: string
-            quantityOnHand:
-                type: integer
-            price:
-                type: string
-                format: decimal
-    BeerPagedList:
-        type: object
-        allOf:
-            - $ref: "#/components/schemas/PagedResponse"  
-        properties:
+                    format: date-time
+        Beer:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/BaseItem"
+            required:
+                - beerName
+                - beerStyle
+                - quantityOnHand
+                - price
+            properties:
+                beerName:
+                    type: string
+                beerStyle:
+                    type: string
+                quantityOnHand:
+                    type: integer
+                price:
+                    type: string
+                    format: decimal
+        BeerPagedList:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/PagedResponse"
+            properties:
+                content:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/Beer"
+        DistributorOrder:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/BaseItem"
+            properties:
+                customerId:
+                    type: string
+                    format: uuid
+                customerRef:
+                    type: string
+                    nullable: true
+                orderLines:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DistributorOrderLine'
+                orderStatus:
+                    $ref: "#/components/schemas/OrderStatusEnum"
+                orderStatusCallbackUrl:
+                    type: string
+                    format: uri
+        DistributorOrderLine:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/BaseItem"
+            properties:
+                beerId:
+                    type: string
+                    format: uuid
+                quantity:
+                    type: integer
+                    minimum: 1
+                    maximum: 999
+        DistributorOrderPagedList:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/PagedResponse"
+            properties:
+                content:
+                    type: array
+                    items:
+                        $ref: "#/components/schemas/DistributorOrder"
+        OrderStatusEnum:
+            type: string
+            enum:
+                - NEW
+                - READY
+                - PICKED_UP
+        OrderStatusUpdate:
+            type: object
+            allOf:
+                -   $ref: "#/components/schemas/BaseItem"
+            properties:
+                orderId:
+                    type: string
+                    format: uuid
+                customerRef:
+                    type: string
+                orderStatus:
+                    $ref: "#/components/schemas/OrderStatusEnum"
+        PagedResponse:
+            type: object
+            properties:
+                pageable:
+                    type: object
+                    properties:
+                        sort:
+                            type: object
+                            properties:
+                                sorted:
+                                    type: boolean
+                                unsorted:
+                                    type: boolean
+                        offset:
+                            type: integer
+                            format: int32
+                        pageNumber:
+                            type: integer
+                            format: int32
+                        pageSize:
+                            type: integer
+                            format: int32
+                        paged:
+                            type: boolean
+                        unpaged:
+                            type: boolean
+                totalPages:
+                    type: integer
+                    format: int32
+                last:
+                    type: boolean
+                totalElements:
+                    type: integer
+                    format: int32
+                size:
+                    type: integer
+                    format: int32
+                number:
+                    type: integer
+                    format: int32
+                numberOfElements:
+                    type: integer
+                    format: int32
+                sort:
+                    type: object
+                    properties:
+                        sorted:
+                            type: boolean
+                        unsorted:
+                            type: boolean
+                first:
+                    type: boolean
+    requestBodies:
+        OrderStatusCallback:
+            description: Order Status Update
             content:
-                type: array
-                items:
-                    $ref: "#/components/schemas/Beer" 
-    OrderStatusEnum:
-        type: string
-        enum:
-            - NEW
-            - READY
-            - PICKED_UP
-    OrderStatusUpdate:
-        type: object
-        allOf:
-            -   $ref: "#/components/schemas/BaseItem"
-        properties:
-            orderId:
-                type: string
-                format: uuid
-            customerRef:
-                type: string
-            orderStatus:
-                $ref: "#/components/schemas/OrderStatusEnum"
-    PagedResponse:
-        type: object
-        properties:
-            pageable:
-                type: object
-                properties:
-                    sort:
+                application/json:
+                    schema:
                         type: object
                         properties:
-                            sorted: 
-                                type: boolean
-                            unsorted:
-                                type: boolean  
-                    offset:
-                        type: integer
-                        format: int32
-                    pageNumber:
-                        type: integer
-                        format: int32
-                    pageSize:
-                        type: integer
-                        format: int32
-                    paged:
-                        type: boolean
-                    unpaged:
-                        type: boolean
-            totalPages:
-                type: integer
-                format: int32
-            last:
-                type: boolean     
-            totalElements:
-                type: integer
-                format: int32                    
-            size:
-                type: integer
-                format: int32 
-            number:
-                type: integer
-                format: int32
-            numberOfElements:
-                type: integer
-                format: int32   
-            sort:
-                type: object  
-                properties:
-                    sorted: 
-                        type: boolean
-                    unsorted:
-                        type: boolean
-            first:
-                type: boolean 
+                            orderId:
+                                type: string
+                                format: uuid
+                            orderStatus:
+                                $ref: "#/components/schemas/OrderStatusUpdate"                
