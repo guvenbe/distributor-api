@@ -18,6 +18,14 @@
       "description": "Local Host"
     }
   ],
+  "tags": [
+    {
+      "name": "Beer"
+    },
+    {
+      "name": "Distributor Order"
+    }
+  ],
   "paths": {
     "/api/v1/beer": {
       "get": {
@@ -63,9 +71,9 @@
         }
       ],
       "get": {
-        "description": "Get BeerDto by Id",
+        "description": "Get Beer by Id",
         "tags": [
-          "BeerDto"
+          "Beer"
         ],
         "responses": {
           "200": {
@@ -84,9 +92,124 @@
         }
       }
     },
+    "/api/v1/order/": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CustomerId"
+        },
+        {
+          "$ref": "#/components/parameters/Page"
+        },
+        {
+          "$ref": "#/components/parameters/PageSize"
+        }
+      ],
+      "get": {
+        "description": "List Distributor Orders",
+        "tags": [
+          "Distributor Order"
+        ],
+        "responses": {
+          "200": {
+            "description": "List Distributor Order Reponse",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistributorOrderPagedList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Place Order",
+        "tags": [
+          "Distributor Order"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DistributorOrder"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Order Created",
+            "headers": {
+              "Location": {
+                "description": "Reference to created Order",
+                "schema": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        },
+        "callbacks": {
+          "orderStatusChange": {
+            "{$request.body#/orderStatusCallback}": {
+              "description": "Webhook post to reecive notifcations of order status changes.",
+              "post": {
+                "requestBody": {
+                  "$ref": "#/components/requestBodies/OrderStatusCallback"
+                },
+                "responses": {
+                  "200": {
+                    "description": "Okay"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/order/{orderId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/CustomerId"
+        },
+        {
+          "$ref": "#/components/parameters/OrderId"
+        }
+      ],
+      "get": {
+        "description": "Get Order By Id",
+        "tags": [
+          "Distributor Order"
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP Okay",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DistributorOrder"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer Id or Order Id Not Found"
+          }
+        }
+      }
+    },
     "/api/v1/order/status": {
       "post": {
         "description": "Webhook post to reecive notifcations of order status changes.",
+        "tags": [
+          "Distributor Order"
+        ],
         "requestBody": {
           "description": "Order Status Update",
           "content": {
@@ -144,6 +267,16 @@
           "type": "string"
         }
       },
+      "CustomerId": {
+        "name": "beerId",
+        "in": "query",
+        "description": "Beer Id",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
+        }
+      },
       "Page": {
         "name": "pageNumber",
         "in": "query",
@@ -164,6 +297,16 @@
           "type": "integer",
           "format": "int32",
           "default": 25
+        }
+      },
+      "OrderId": {
+        "name": "orderId",
+        "in": "path",
+        "description": "Order Id",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid"
         }
       }
     },
@@ -230,6 +373,72 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Beer"
+            }
+          }
+        }
+      },
+      "DistributorOrder": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseItem"
+          }
+        ],
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "orderLines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistributorOrderLine"
+            }
+          },
+          "orderStatus": {
+            "$ref": "#/components/schemas/OrderStatusEnum"
+          },
+          "orderStatusCallbackUrl": {
+            "type": "string",
+            "format": "uri"
+          }
+        }
+      },
+      "DistributorOrderLine": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/BaseItem"
+          }
+        ],
+        "properties": {
+          "beerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 999
+          }
+        }
+      },
+      "DistributorOrderPagedList": {
+        "type": "object",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/PagedResponse"
+          }
+        ],
+        "properties": {
+          "content": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DistributorOrder"
             }
           }
         }
@@ -335,6 +544,27 @@
           },
           "first": {
             "type": "boolean"
+          }
+        }
+      }
+    },
+    "requestBodies": {
+      "OrderStatusCallback": {
+        "description": "Order Status Update",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "orderStatus": {
+                  "$ref": "#/components/schemas/OrderStatusUpdate"
+                }
+              }
+            }
           }
         }
       }
