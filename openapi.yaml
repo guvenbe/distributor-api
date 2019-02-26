@@ -66,6 +66,47 @@ paths:
         '200':
           description: Okay
 components:
+  parameters:
+    BeerId:
+      name: beerId
+      in: path
+      description: Beer Id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    BeerName:
+      name: beerName
+      in: query
+      description: Beer Name
+      required: false
+      schema:
+        type: string
+    BeerStyle:
+      name: beerStyle
+      in: query
+      description: Beer Style
+      required: false
+      schema:
+        type: string
+    Page:
+      name: pageNumber
+      in: query
+      description: Page number.
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      description: Page size.
+      required: false
+      schema:
+        type: integer
+        format: int32
+        default: 25
   schemas:
     BaseItem:
       type: object
@@ -95,7 +136,7 @@ components:
         beerName:
           type: string
         beerStyle:
-          $ref: '#/components/schemas/BeerStyleEnum'
+          type: string
         quantityOnHand:
           type: integer
         price:
@@ -128,3 +169,55 @@ components:
           type: string
         orderStatus:
           $ref: '#/components/schemas/OrderStatusEnum'
+    PagedResponse:
+      type: object
+      properties:
+        pageable:
+          type: object
+          properties:
+            sort:
+              type: object
+              properties:
+                sorted:
+                  type: boolean
+                unsorted:
+                  type: boolean
+            offset:
+              type: integer
+              format: int32
+            pageNumber:
+              type: integer
+              format: int32
+            pageSize:
+              type: integer
+              format: int32
+            paged:
+              type: boolean
+            unpaged:
+              type: boolean
+        totalPages:
+          type: integer
+          format: int32
+        last:
+          type: boolean
+        totalElements:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        number:
+          type: integer
+          format: int32
+        numberOfElements:
+          type: integer
+          format: int32
+        sort:
+          type: object
+          properties:
+            sorted:
+              type: boolean
+            unsorted:
+              type: boolean
+        first:
+          type: boolean
